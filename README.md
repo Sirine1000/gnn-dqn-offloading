@@ -92,12 +92,12 @@ The model learns to select the optimal node for each task.
   - Learning rate: 3e-4
   - Discount factor: 0.99
 
- Results
+# Results
 Significant latency reduction vs Random (-70%)  
 Near-optimal performance close to Greedy  
 
 
- Tech Stack
+ # Tech Stack
 
 - Python
 - PyTorch
