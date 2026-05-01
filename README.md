@@ -17,96 +17,263 @@ conda activate raycloudsim
 pip install -r requirements.txt
 ```
 
-# Usage
-To run the simulation, execute the main.py script. You can modify the configuration file path to use different scenarios and policies. For example, to run the simulation with the NOTE policy in the Pakistan scenario, use the following command:
-python main.py --config configs/Pakistan/DQL/NOTE.yaml
+# AI-Based Task Offloading using GNN-DQN in Edge–Fog–Cloud Computing
 
-# Policies
+## Overview
 
-The framework supports various task offloading policies, including:
+This project proposes a **hybrid Graph Neural Network (GNN) and Deep Q-Network (DQN)** framework for intelligent task offloading in **Edge–Fog–Cloud environments**.
 
-    Random: Tasks are offloaded to a randomly selected node.
-    Greedy: Tasks are offloaded to the node with the most available resources.
-    Round Robin: Tasks are offloaded in a round-robin fashion among available nodes
-    MLP DQL: A Deep Q-Learning based policy using a Multi-Layer Perceptron.
-    MLP NPGA/NSGA-II: A policy using Multi-Layer Perceptron with Non-dominated Sorting Genetic Algorithm.
-    NOTE: Node Offloading Transformer-based Encoder policy using the DQL algorithm.
-    T-NOTE: Task-aware Node Offloading Transformer-based Encoder policy using the DQL algorithm.
-    
-# Informations
+The objective is to optimize **Quality of Service (QoS)** for IoT applications by minimizing:
 
-This framework is based on the RayCloudSim project available at RayCloudSim GitHub Repository. For more details on the simulation environment and additional functionalities please refer to the original repository.
+* Latency
+* Energy consumption
 
-This repository is developed and maintained by Arthur GARON as part of his research project. For any questions or contributions, please feel free to open an issue or submit a pull request.
+The approach combines:
 
-
-AI-Based Task Offloading using GNN-DQN in Edge–Fog–Cloud
-
-# Overview
-This project proposes a hybrid Graph Neural Network (GNN) and Deep Q-Network (DQN) framework for intelligent task offloading in Edge–Fog–Cloud computing environments.
-
-The objective is to optimize Quality of Service (QoS) by minimizing:
--  Latency
--  Energy consumption
-
-
-
- # Methodology
-
- Graph Modeling
-- Infrastructure modeled as a graph:
-  - Nodes → Edge / Fog / Cloud resources
-  - Edges → Network connections (bandwidth-aware)
-- Node features:
-  - CPU capacity (available + max)
-  - Buffer capacity
-  - Energy coefficients
-  - Node type (one-hot encoding)
-
- GNN Encoder
-- 3 Graph Convolution layers
-- Hidden dimension: 64
-- Activation: ReLU
-- Output: Node embeddings capturing topology
-
- DQN Agent
-- Input: GNN embeddings
-- Architecture: 256 → 128 → Output (Q-values per node)
-- Strategy: ε-greedy exploration
-- Replay buffer + target network
+* **GNN** → to capture infrastructure topology
+* **DQN** → to learn optimal offloading decisions
 
 ---
 
-# Objective Function
+## System Architecture
+
+Nodes: Edge, Fog, Cloud
+Edges: Network links (bandwidth-aware)
+Simulator: RayCloudSim (discrete-event simulation)
+
+The infrastructure is modeled as a **graph**:
+
+* Nodes = computing resources
+* Edges = communication links
+
+---
+
+## Methodology
+
+### Graph Modeling
+
+* Graph built from a JSON scenario file
+* Adjacency matrix normalized (GCN-style)
+* Self-loops added
+
+**Node features (9 total):**
+
+**Dynamic:**
+
+* Available CPU (normalized)
+* Available buffer (normalized)
+
+**Static:**
+
+* Max CPU
+* Max buffer
+* Idle energy coefficient
+* Execution energy coefficient
+* Node type (Edge / Fog / Cloud → one-hot)
+
+Node features are dynamically updated during simulation.
+
+---
+
+### GNN Encoder
+
+* Model: Graph Convolutional Network (GCN)
+* Layers: 3 GraphConv layers
+* Hidden dimension: 64
+* Activation: ReLU + Dropout (0.1)
+
+Outputs:
+
+* Node embeddings
+* Graph embedding (mean pooling)
+
+Key idea:
+
+GNN embeddings are recomputed dynamically for each task to capture context
+
+---
+
+### DQN Agent
+
+**State representation:**
+
+```
+[node_embedding | graph_embedding | task_features]
+```
+
+**Architecture:**
+
+* Fully connected network: 256 → 128 → 1 (Q-value per node)
+
+**Training details:**
+
+* Loss: SmoothL1Loss (Huber)
+* Optimizer: Adam (lr = 3e-4)
+* Discount factor: γ = 0.99
+
+**Reinforcement Learning techniques:**
+
+* Experience Replay (capacity = 20,000)
+* Target Network (updated every 50 steps)
+* ε-greedy exploration
+
+---
+
+### Reward Function
 
 The reward is defined as:
 
+```
 R = - (α × Latency + β × Energy)
+```
 
-The model learns to select the optimal node for each task.
+Optional:
+
+* Deadline penalty
+* Failure penalty
+
+A normalized version can be used for better stability.
+
+---
+
+## Installation
+
+### Requirements
+
+* Python ≥ 3.8
+* numpy
+* pandas
+* torch
+* networkx
+* simpy
+
+---
+
+### Setup (Recommended)
+
+```bash
+conda create --name raycloudsim python=3.12
+conda activate raycloudsim
+pip install -r requirements.txt
+```
+
+---
+
+## Usage
+
+To run the simulation:
+
+```bash
+python main.py --config configs/Pakistan/DQL/NOTE.yaml
+```
+
+You can modify the configuration file to test different scenarios and policies.
+
+---
+
+## Experimental Setup
+
+* Dataset: Pakistan IoT task dataset
+* Simulator: RayCloudSim
+
+**Training parameters:**
+
+* Epochs: 5–30
+* Batch size: 32
+* Replay buffer: 20,000
+* Discount factor: 0.99
+
+---
+
+## Results
+
+The proposed GNN-DQN achieves:
+
+* latency reduction vs Random
+* Near-optimal performance close to Greedy
+* Improved energy efficiency in several scenarios
+
+### Additional insights:
+
+* Learns a **QoS-aware offloading policy**
+* High **deadline satisfaction (~98%)**
+* Robust and stable behavior
 
 
 
- # Experimental Setup
-  Dataset: Pakistan IoT task dataset
-  Simulator: RayCloudSim
-  Training:
-  - Epochs: 30
-  - Batch size: 32
-  - Learning rate: 3e-4
-  - Discount factor: 0.99
+## Baselines
 
-# Results
-Significant latency reduction vs Random (-70%)  
-Near-optimal performance close to Greedy  
+Compared methods:
+
+* Random
+* Greedy (oracle baseline)
+* DQN-only (MLP without GNN)
+
+---
+
+## Project Structure
+
+```
+├── main.py
+├── configs/
+├── graph_utils.py
+├── preprocessing_utils.py
+├── GNN_DQN_Training.py
+├── GNN Graph.py
+├── dataset/
+├── models/
+└── README.md
+```
+
+---
+
+## Key Features
+
+* ✅ Dynamic GNN embeddings (task-aware)
+* ✅ Integration with RayCloudSim
+* ✅ Realistic latency & energy modeling
+* ✅ End-to-end training + evaluation pipeline
+* ✅ Visualization (learning curves, node selection, QoS metrics)
+
+---
+
+## Tech Stack
+
+* Python
+* PyTorch
+* NetworkX
+* NumPy / Pandas
+* RayCloudSim
+
+---
+
+## References
+
+* M. Aazam et al., *Cloud of Things (CoT)*, IEEE Transactions on Sustainable Computing, 2022
+* GARON et al., *NATE / T-NATE: Efficient Transformers for IoT Task Offloading*
+
+---
+
+## Author
+
+Developed as part of a research project in:
+
+**M2 Data Science & Machine Learning**
+CY Cergy Paris Université / ENSEA
+
+---
+
+## Contact
+
+For questions or collaborations:
+
+* Open an issue
+* Submit a pull request
+
+---
 
 
- # Tech Stack
+    
 
-- Python
-- PyTorch
-- NetworkX
-- NumPy / Pandas
-- RayCloudSim
 
 
