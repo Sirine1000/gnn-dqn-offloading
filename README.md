@@ -1,4 +1,4 @@
-# Task Offloading in Fog Environment
+# Task Offloading in Edge-Fog-Cloud Environment for IoT applications
 # Requirements & Installation
 # Main Dependent Modules:
 
