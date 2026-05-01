@@ -1,1 +1,9 @@
-
+torch
+numpy
+pandas
+networkx
+simpy
+matplotlib
+scikit-learn
+jupyter
+notebook
