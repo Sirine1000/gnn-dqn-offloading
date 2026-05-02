@@ -1,1 +1,41 @@
+project:
+  name: "GNN-DQN Task Offloading"
 
+data:
+  train_path: "data/trainset.csv"
+  test_path: "data/testset.csv"
+
+graph:
+  scenario_file: "New_Feature_nodes.json"
+  gnn_hidden_dim: 64
+  gnn_num_layers: 3
+  dropout: 0.1
+
+dqn:
+  hidden_dim: 256
+  batch_size: 32
+  learning_rate: 0.0003
+  gamma: 0.99
+  replay_buffer_capacity: 20000
+  target_sync_every: 50
+
+training:
+  num_epochs: 30
+  max_train_tasks: 1000
+  epsilon_start: 1.0
+  epsilon_min: 0.05
+  epsilon_decay: 0.80
+
+reward:
+  alpha: 1.0
+  beta: 1.0
+  fail_penalty: -10.0
+  deadline_penalty: -5.0
+
+evaluation:
+  max_eval_tasks: 500
+  baselines:
+    - Random
+    - Greedy
+    - DQN-only
+    - GNN-DQN
